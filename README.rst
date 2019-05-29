@@ -29,7 +29,8 @@ Usage
                             search term
       -n, --non-interactive
                             non interactive mode, download first available choice
-
+      --md5
+                            MD5 Search
 
 Dependencies
 ~~~~~~~~~~~~
