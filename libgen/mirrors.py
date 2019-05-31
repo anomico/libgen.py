@@ -54,9 +54,9 @@ class Mirror(ABC):
             values.append(attrs)
         return (list(headers), values)
 
-    def run(self, non_interactive=False):
+    def run(self, non_interactive: bool = False, md5: bool = False):
         try:
-            for publications in self.search():
+            for publications in self.search(md5=md5):
                 if non_interactive:
                     selected = publications[0]
                 else:
@@ -71,7 +71,7 @@ class Mirror(ABC):
                 sys.exit(1)
             print(e)
 
-    def search(self, start_at: int = 1) -> Generator[bs4.BeautifulSoup, None, None]:
+    def search(self, start_at: int = 1, md5: bool = False) -> Generator[bs4.BeautifulSoup, None, None]:
         """
         Yield result pages for a given search term.
 
@@ -83,7 +83,7 @@ class Mirror(ABC):
 
         print(f"Searching for: '{self.search_term}'")
 
-        for page_url in self.next_page_url(start_at):
+        for page_url in self.next_page_url(start_at, md5):
             r = requests.get(page_url)
             if r.status_code == 200:
                 publications = self.extract(BeautifulSoup(r.text, 'html.parser'))
@@ -203,16 +203,18 @@ class Mirror(ABC):
 
 
 class GenLibRusEc(Mirror):
+    # TODO: Seperate URL and query string generation, via, requests params in request
     search_url = "http://gen.lib.rus.ec/search.php?req="
 
     def __init__(self, search_term: str) -> None:
         super().__init__(self.search_url)
         self.search_term = search_term
 
-    def next_page_url(self, start_at: int) -> Generator[str, None, None]:
+    def next_page_url(self, start_at: int, md5: bool = False) -> Generator[str, None, None]:
         """Yields the new results page."""
+        md5_query_string = '&column=md5' if md5 else ''
         for pn in itertools.count(start_at):
-            yield f"{self.search_url}{self.search_term}&page={str(pn)}"
+            yield f"{self.search_url}{self.search_term}{md5_query_string}&page={str(pn)}"
 
     def extract(self, page):
         """Extract all the publications info in a given result page.
